@@ -23,7 +23,17 @@ export const register = async (req, res) => {
 
     await newUser.save();
 
-    res.status(201).json({ msg: "Usuario creado correctamente" });
+    // 🔥 GENERAR TOKEN (ESTO FALTABA)
+    const token = jwt.sign(
+      { id: newUser._id },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    res.status(201).json({
+      msg: "Usuario creado correctamente",
+      token
+    });
 
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -31,37 +41,30 @@ export const register = async (req, res) => {
 };
 
 export const login = async (req, res) => {
-  try {
-    const { email, password } = req.body;
+  const { email, password } = req.body;
 
-    const user = await User.findOne({ email });
+  const user = await User.findOne({ email });
 
-    if (!user) {
-      return res.status(400).json({ msg: "Usuario no existe" });
-    }
-
-    const isMatch = await bcrypt.compare(password, user.password);
-
-    if (!isMatch) {
-      return res.status(400).json({ msg: "Contraseña incorrecta" });
-    }
-
-
-    const token = jwt.sign(
-    { id: user._id }, // 👈 ESTO ES CLAVE
-    process.env.JWT_SECRET,
-    { expiresIn: "1h" }
-    );
-
-    res.json({
-      msg: "Login exitoso",
-      token
-    });
-
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+  if (!user) {
+    return res.status(400).json({ msg: "Usuario no existe" });
   }
-  
+
+  const isMatch = await bcrypt.compare(password, user.password);
+
+  if (!isMatch) {
+    return res.status(400).json({ msg: "Password incorrecta" });
+  }
+
+  const token = jwt.sign(
+    { id: user._id },
+    process.env.JWT_SECRET,
+    { expiresIn: "7d" }
+  );
+
+  res.json({
+    token,
+    user
+  });
 };
 export const updateTask = async (req, res) => {
   try {
